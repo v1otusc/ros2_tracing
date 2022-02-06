@@ -80,6 +80,8 @@
     _DECLARE_TRACEPOINT_ARGS, _DECLARE_TRACEPOINT_ARGS, _DECLARE_TRACEPOINT_ARGS, \
     _DECLARE_TRACEPOINT_ARGS, _DECLARE_TRACEPOINT_ARGS, _DECLARE_TRACEPOINT_ARGS, \
     _DECLARE_TRACEPOINT_NOARGS, shoud_not_be_called_without_any_arguments)
+#  define _DECLARE_TRACEPOINT(...) \
+  _GET_MACRO_DECLARE_TRACEPOINT(__VA_ARGS__)(__VA_ARGS__)
 
 /// Call a tracepoint.
 /**
@@ -89,7 +91,7 @@
  *
  * This macro currently supports up to 9 tracepoint arguments after the event name.
  */
-#  define TRACEPOINT(...) \
+#  define TRACETOOLS_TRACEPOINT(...) \
   _GET_MACRO_TRACEPOINT(__VA_ARGS__)(__VA_ARGS__)
 /// Check if a tracepoint is enabled at runtime.
 /**
@@ -99,7 +101,7 @@
  *
  * This is the preferred method over calling the underlying function directly.
  */
-#  define TRACEPOINT_ENABLED(event_name) \
+#  define TRACETOOLS_TRACEPOINT_ENABLED(event_name) \
   ros_trace_enabled_ ## event_name()
 /// Call a tracepoint, without checking if it is enabled.
 /**
@@ -112,16 +114,44 @@
  *
  * This macro currently supports up to 9 tracepoint arguments after the event name.
  */
-#  define DO_TRACEPOINT(...) \
+#  define TRACETOOLS_DO_TRACEPOINT(...) \
   _GET_MACRO_DO_TRACEPOINT(__VA_ARGS__)(__VA_ARGS__)
-#  define DECLARE_TRACEPOINT(...) \
-  _GET_MACRO_DECLARE_TRACEPOINT(__VA_ARGS__)(__VA_ARGS__)
 #else
-#  define TRACEPOINT(...) ((void) (0))
-#  define TRACEPOINT_ENABLED(event_name) false
-#  define DO_TRACEPOINT(...) ((void) (0))
-#  define DECLARE_TRACEPOINT(...)
+#  define TRACETOOLS_TRACEPOINT(...) ((void) (0))
+#  define TRACETOOLS_TRACEPOINT_ENABLED(event_name) false
+#  define TRACETOOLS_DO_TRACEPOINT(...) ((void) (0))
+#  define _DECLARE_TRACEPOINT(...)
 #endif  // TRACETOOLS_DISABLED
+
+// TODO(christophebedard) remove in Rolling after Iron release
+#ifndef DOXYGEN_ONLY
+#  ifndef _WIN32
+#   define _DEPRECATED_WITH_MSG(msg) __attribute__((deprecated(msg)))
+#  else
+#   define _DEPRECATED_WITH_MSG(msg) __declspec(deprecated(msg))
+#  endif
+#else
+#  define _DEPRECATED_WITH_MSG(msg)
+#endif
+#define _DEPRECATED_MACRO_FUNCTION_DEFINITION(macro_name) \
+  static inline void \
+  _DEPRECATED_WITH_MSG("use TRACETOOLS_" #macro_name "() instead") \
+  _deprecated_macro_ ## macro_name(void) \
+  { \
+  }
+
+_DEPRECATED_MACRO_FUNCTION_DEFINITION(TRACEPOINT)
+#define TRACEPOINT(...) \
+  _deprecated_macro_TRACEPOINT(); \
+  TRACETOOLS_TRACEPOINT(__VA_ARGS__)
+_DEPRECATED_MACRO_FUNCTION_DEFINITION(TRACEPOINT_ENABLED)
+#define TRACEPOINT_ENABLED(...) \
+  _deprecated_macro_TRACEPOINT_ENABLED(); \
+  TRACETOOLS_TRACEPOINT_ENABLED(__VA_ARGS__)
+_DEPRECATED_MACRO_FUNCTION_DEFINITION(DO_TRACEPOINT)
+#define DO_TRACEPOINT(...) \
+  _deprecated_macro_DO_TRACEPOINT(); \
+  TRACETOOLS_DO_TRACEPOINT(__VA_ARGS__)
 
 #ifdef __cplusplus
 extern "C"
@@ -141,7 +171,7 @@ TRACETOOLS_PUBLIC bool ros_trace_compile_status();
  *
  * \param[in] context_handle pointer to the `rcl_context_t` handle
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_init,
   const void * context_handle)
 
@@ -155,7 +185,7 @@ DECLARE_TRACEPOINT(
  * \param[in] node_name node name
  * \param[in] node_namespace node namespace
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_node_init,
   const void * node_handle,
   const void * rmw_handle,
@@ -170,7 +200,7 @@ DECLARE_TRACEPOINT(
  * \param[in] rmw_publisher_handle pointer to the publisher's `rmw_publisher_t` handle
  * \param[in] gid pointer to the publisher's DDS/rmw GID
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rmw_publisher_init,
   const void * rmw_publisher_handle,
   const uint8_t * gid)
@@ -187,7 +217,7 @@ DECLARE_TRACEPOINT(
  * \param[in] topic_name full topic name
  * \param[in] queue_depth publisher history depth
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_publisher_init,
   const void * publisher_handle,
   const void * node_handle,
@@ -203,7 +233,7 @@ DECLARE_TRACEPOINT(
  * \param[in] publisher_handle not used, but kept for API/ABI stability
  * \param[in] message pointer to the message being published
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_publish,
   const void * publisher_handle,
   const void * message)
@@ -217,7 +247,7 @@ DECLARE_TRACEPOINT(
  * \param[in] publisher_handle pointer to the publisher's `rcl_publisher_t` handle
  * \param[in] message pointer to the message being published
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_publish,
   const void * publisher_handle,
   const void * message)
@@ -229,7 +259,7 @@ DECLARE_TRACEPOINT(
  *
  * \param[in] message pointer to the message being published
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rmw_publish,
   const void * message)
 
@@ -241,7 +271,7 @@ DECLARE_TRACEPOINT(
  * \param[in] rmw_subscription_handle pointer to the publisher's `rmw_subscription_t` handle
  * \param[in] gid pointer to the subscription's DDS/rmw GID
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rmw_subscription_init,
   const void * rmw_subscription_handle,
   const uint8_t * gid)
@@ -259,7 +289,7 @@ DECLARE_TRACEPOINT(
  * \param[in] topic_name full topic name
  * \param[in] queue_depth subscription history depth
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_subscription_init,
   const void * subscription_handle,
   const void * node_handle,
@@ -278,7 +308,7 @@ DECLARE_TRACEPOINT(
  *  pointer to the `rcl_subscription_t` handle of the subscription this object belongs to
  * \param[in] subscription pointer to this subscription object (e.g. `rclcpp::*Subscription*`)
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_subscription_init,
   const void * subscription_handle,
   const void * subscription)
@@ -290,7 +320,7 @@ DECLARE_TRACEPOINT(
  * \param[in] subscription pointer to the subscription object this callback belongs to
  * \param[in] callback pointer to this callback object (e.g. `rclcpp::AnySubscriptionCallback`)
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_subscription_callback_added,
   const void * subscription,
   const void * callback)
@@ -307,7 +337,7 @@ DECLARE_TRACEPOINT(
  *  or 0 (if no message or no info)
  * \param[in] taken whether a message was taken
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rmw_take,
   const void * rmw_subscription_handle,
   const void * message,
@@ -321,7 +351,7 @@ DECLARE_TRACEPOINT(
  *
  * \param[in] message pointer to the message being taken
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_take,
   const void * message)
 
@@ -332,7 +362,7 @@ DECLARE_TRACEPOINT(
  *
  * \param[in] message pointer to the message being taken
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_take,
   const void * message)
 
@@ -347,7 +377,7 @@ DECLARE_TRACEPOINT(
  * \param[in] rmw_service_handle pointer to the service's `rmw_service_t` handle
  * \param[in] service_name full service name
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_service_init,
   const void * service_handle,
   const void * node_handle,
@@ -362,7 +392,7 @@ DECLARE_TRACEPOINT(
  *  pointer to the `rcl_service_t` handle of the service this callback belongs to
  * \param[in] callback pointer to this callback object (e.g. `rclcpp::AnyServiceCallback`)
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_service_callback_added,
   const void * service_handle,
   const void * callback)
@@ -378,7 +408,7 @@ DECLARE_TRACEPOINT(
  * \param[in] rmw_client_handle pointer to the client's `rmw_client_t` handle
  * \param[in] service_name full client name
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_client_init,
   const void * client_handle,
   const void * node_handle,
@@ -393,7 +423,7 @@ DECLARE_TRACEPOINT(
  * \param[in] timer_handle pointer to the timer's `rcl_timer_t` handle
  * \param[in] period period in nanoseconds
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_timer_init,
   const void * timer_handle,
   int64_t period)
@@ -406,7 +436,7 @@ DECLARE_TRACEPOINT(
  *  pointer to the `rcl_timer_t` handle of the timer this callback belongs to
  * \param[in] callback pointer to the callback object (`std::function`)
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_timer_callback_added,
   const void * timer_handle,
   const void * callback)
@@ -418,7 +448,7 @@ DECLARE_TRACEPOINT(
  * \param[in] timer_handle pointer to the timer's `rcl_timer_t` handle
  * \param[in] node_handle pointer to the `rcl_node_t` handle of the node the timer belongs to
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_timer_link_node,
   const void * timer_handle,
   const void * node_handle)
@@ -433,7 +463,7 @@ DECLARE_TRACEPOINT(
  * \param[in] function_symbol demangled symbol of the callback function/lambda,
  *  see \ref get_symbol()
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_callback_register,
   const void * callback,
   const char * function_symbol)
@@ -447,7 +477,7 @@ DECLARE_TRACEPOINT(
  *  `rclcpp::AnyServiceCallback`, timer `std::function`, etc.)
  * \param[in] is_intra_process whether this callback is done via intra-process or not
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   callback_start,
   const void * callback,
   const bool is_intra_process)
@@ -460,7 +490,7 @@ DECLARE_TRACEPOINT(
  *  (e.g. `rclcpp::AnySubscriptionCallback`,
  *  `rclcpp::AnyServiceCallback`, timer `std::function`, etc.)
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   callback_end,
   const void * callback)
 
@@ -472,7 +502,7 @@ DECLARE_TRACEPOINT(
  * \param[in] node_handle pointer to the node handle
  * \param[in] state_machine pointer to the state machine
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_lifecycle_state_machine_init,
   const void * node_handle,
   const void * state_machine)
@@ -485,7 +515,7 @@ DECLARE_TRACEPOINT(
  * \param[in] start_label start state label
  * \param[in] goal_label goal state label
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rcl_lifecycle_transition,
   const void * state_machine,
   const char * start_label,
@@ -495,7 +525,7 @@ DECLARE_TRACEPOINT(
 /**
  * Notes the start time of the executor phase that gets the next executable that's ready.
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_executor_get_next_ready)
 
 /// `rclcpp_executor_wait_for_work`
@@ -504,7 +534,7 @@ DECLARE_TRACEPOINT(
  *
  * \param[in] timeout the timeout value for the wait call
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_executor_wait_for_work,
   const int64_t timeout)
 
@@ -517,7 +547,7 @@ DECLARE_TRACEPOINT(
  *
  * \param[in] handle pointer to the `rcl` handle of the executable being executed
  */
-DECLARE_TRACEPOINT(
+_DECLARE_TRACEPOINT(
   rclcpp_executor_execute,
   const void * handle)
 
