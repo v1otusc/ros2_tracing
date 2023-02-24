@@ -34,6 +34,7 @@ class TestSubscription(TraceTestCase):
                 tp.rcl_subscription_init,
                 tp.rclcpp_subscription_init,
                 tp.rclcpp_subscription_callback_added,
+                tp.rclcpp_callback_register,
                 tp.rclcpp_executor_execute,
                 tp.rmw_take,
                 tp.rcl_take,
@@ -56,6 +57,7 @@ class TestSubscription(TraceTestCase):
         callback_added_events = self.get_events_with_name(
             tp.rclcpp_subscription_callback_added,
         )
+        callback_register_events = self.get_events_with_name(tp.rclcpp_callback_register)
         execute_events = self.get_events_with_name(tp.rclcpp_executor_execute)
         rmw_take_events = self.get_events_with_name(tp.rmw_take)
         rcl_take_events = self.get_events_with_name(tp.rcl_take)
@@ -80,6 +82,12 @@ class TestSubscription(TraceTestCase):
             )
         for event in callback_added_events:
             self.assertValidHandle(event, ['subscription', 'callback'])
+        # TODO find callback_register event with relevant ping and pong callback symbol strings
+        self.assertGreater(len(callback_register_events), 0)
+        print(callback_register_events)
+        for event in callback_register_events:
+            self.assertValidPointer(event, 'callback')
+            self.assertStringFieldNotEmpty(event, 'symbol')
         for event in rmw_take_events:
             self.assertValidHandle(event, ['rmw_subscription_handle'])
             self.assertValidPointer(event, ['message'])
